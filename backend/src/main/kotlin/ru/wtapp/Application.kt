@@ -9,6 +9,12 @@ import io.ktor.server.plugins.cors.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
+import ru.wtapp.plugins.configureAuthentication
+import ru.wtapp.plugins.configureDatabase
+import ru.wtapp.plugins.configureWebSockets
+import ru.wtapp.routes.authRoutes
+import ru.wtapp.routes.userRoutes
+import ru.wtapp.routes.websocketRoutes
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -16,10 +22,15 @@ fun main() {
 }
 
 fun Application.module() {
+    // Инициализация базы данных
+    configureDatabase()
+
+    // Плагины
     install(ContentNegotiation) {
         json(Json {
             prettyPrint = true
             isLenient = true
+            ignoreUnknownKeys = true
         })
     }
 
@@ -27,30 +38,34 @@ fun Application.module() {
         anyHost()
         allowHeader("Content-Type")
         allowHeader("Authorization")
+        allowHeader("Origin")
+        allowMethod(io.ktor.http.HttpMethod.Options)
+        allowMethod(io.ktor.http.HttpMethod.Put)
+        allowMethod(io.ktor.http.HttpMethod.Delete)
+        allowMethod(io.ktor.http.HttpMethod.Patch)
     }
 
+    // Конфигурация аутентификации и WebSockets
+    configureAuthentication()
+    configureWebSockets()
+
+    // Маршруты
     routing {
         get("/") {
-            call.respond(
-                mapOf(
-                    "message" to "Car Chat Backend is running!",
-                    "status" to "OK",
-                    "version" to "1.0.0"
-                )
-            )
+            call.respond(mapOf(
+                "message" to "Car Chat Backend is running!",
+                "status" to "OK",
+                "version" to "1.0.0"
+            ))
         }
 
         get("/health") {
             call.respond(mapOf("status" to "healthy"))
         }
 
-        // Простой тестовый эндпоинт для проверки
-        get("/test/users") {
-            val users = listOf(
-                mapOf("id" to "1", "username" to "test1", "displayName" to "Test User 1"),
-                mapOf("id" to "2", "username" to "test2", "displayName" to "Test User 2")
-            )
-            call.respond(users)
-        }
+        // Подключаем модули маршрутов
+        authRoutes()
+        userRoutes()
+        websocketRoutes()
     }
 }

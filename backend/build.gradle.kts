@@ -46,6 +46,9 @@ dependencies {
     // Password Hashing
     implementation("at.favre.lib:bcrypt:0.10.2")
 
+    // JWT
+    implementation("com.auth0:java-jwt:4.4.0")
+
     // Logging
     implementation("io.ktor:ktor-server-call-logging:2.3.5")
     implementation("ch.qos.logback:logback-classic:1.4.11")

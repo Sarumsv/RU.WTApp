@@ -1,27 +1,44 @@
 package ru.wtapp.plugins
 
-// Временная заглушка - база данных в памяти
-object InMemoryDatabase {
-    private val users = mutableListOf<User>()
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import io.ktor.server.application.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
+import ru.wtapp.models.*
 
-    fun addUser(user: User) {
-        users.add(user)
+object DatabaseFactory {
+    fun init() {
+        Database.connect(hikari())
+
+        // Создаем таблицы при старте
+        transaction {
+            SchemaUtils.create(Users, Chats, Messages, ChatMembers)
+        }
     }
 
-    fun findUserByUsername(username: String): User? {
-        return users.find { it.username == username }
+    private fun hikari(): HikariDataSource {
+        val config = HikariConfig()
+        config.driverClassName = "org.postgresql.Driver"
+        config.jdbcUrl = "jdbc:postgresql://localhost:5432/carchat"
+        config.username = "developer"
+        config.password = "password"
+        config.maximumPoolSize = 10
+        config.isAutoCommit = false
+        config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        config.validate()
+        return HikariDataSource(config)
     }
 
-    fun getAllUsers(): List<User> {
-        return users.toList()
-    }
+    suspend fun <T> dbQuery(block: () -> T): T =
+        withContext(Dispatchers.IO) {
+            transaction { block() }
+        }
 }
 
-// Временный класс User для in-memory базы
-data class User(
-    val id: String,
-    val username: String,
-    val displayName: String,
-    val passwordHash: String,
-    val avatarUrl: String? = null
-)
+fun Application.configureDatabase() {
+    DatabaseFactory.init()
+}
