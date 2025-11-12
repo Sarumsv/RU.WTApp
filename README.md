@@ -1,4 +1,4 @@
-# 🚗 Chat - Мессенджер
+#  Chat - Мессенджер
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.10-blue.svg)](https://kotlinlang.org)
 [![Ktor](https://img.shields.io/badge/Ktor-2.3.5-orange.svg)](https://ktor.io)
